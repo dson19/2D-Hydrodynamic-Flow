@@ -47,7 +47,7 @@ def plot_flow_field(X, Y, u, v, p, psi):
     # Plot 3: Streamlines
     ax3 = fig.add_subplot(gs[1, 0])
     stream = ax3.streamplot(X, Y, u, v, color=vel_mag,
-                          cmap='viridis', density=2)
+                          cmap='viridis', density=4)
     ax3.set_title('Streamlines')
     ax3.set_xlabel('x')
     ax3.set_ylabel('y')

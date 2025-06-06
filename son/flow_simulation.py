@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from visualization import plot_flow_field
 
 class FlowSimulation:
-    def __init__(self, nx=200, ny=40, Lx=100.0, Ly=30.0, Re=100, dt=0.0001, max_iter=1000, tol=1e-5, urf_u=0.7, urf_p=0.3):
+    def __init__(self, nx=200, ny=40, Lx=100.0, Ly=30.0, Re=100, dt=0.001, max_iter=1000, tol=1e-5, urf_u=0.7, urf_p=0.3):
         """
         Initialize the flow simulation for 2D water in nanochannel
         
@@ -28,7 +28,7 @@ class FlowSimulation:
             Under-relaxation factor for pressure
         """
         # Physical parameters (in Angstroms) from Nature article
-        self.channel_height = 6.0  # d: carbon-carbon interlayer distance (6 or 7Å)
+        self.channel_height = 7.0  # d: carbon-carbon interlayer distance (6 or 7Å)
         self.vdw_offset = 1.67     # δvdW: van der Waals offset
         self.effective_height = self.channel_height - 2 * self.vdw_offset  # h: effective channel height
         self.piston_height = 30.0   # H: piston height
@@ -245,6 +245,6 @@ class FlowSimulation:
 
 if __name__ == "__main__":
     # Create and run simulation for 2D water in nanochannel
-    sim = FlowSimulation(nx=200, ny=40, Lx=100.0, Ly=30.0, Re=100, dt=0.0001, max_iter=2000)
+    sim = FlowSimulation(nx=200, ny=40, Lx=100.0, Ly=30.0, Re=100, dt=0.001, max_iter=1000)
     sim.solve()
     sim.plot_results() 
