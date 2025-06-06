@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from flow_simulation import FlowSimulation
 
 def plot_flow_field(X, Y, u, v, p, psi):
     """
@@ -19,30 +18,19 @@ def plot_flow_field(X, Y, u, v, p, psi):
     psi : 2D array
         Stream function
     """
+    # Create figure with subplots
     fig = plt.figure(figsize=(15, 10))
-    # Get channel bounds from FlowSimulation defaults
-    channel_height = 7.0
-    vdw_offset = 1.67
-    Ly = Y.max()
-    effective_height = channel_height - 2 * vdw_offset
-    channel_top = (Ly + effective_height) / 2
-    channel_bottom = (Ly - effective_height) / 2
-
     gs = GridSpec(2, 2)
+    
+    # Velocity magnitude
     vel_mag = np.sqrt(u**2 + v**2)
     
-    # Plot 1: Velocity vectors (only within channel height)
+    # Plot 1: Velocity vectors
     ax1 = fig.add_subplot(gs[0, 0])
-    skip = 2
-    mask = (Y >= channel_bottom) & (Y <= channel_top)
-    X_masked = np.where(mask, X, np.nan)
-    Y_masked = np.where(mask, Y, np.nan)
-    u_masked = np.where(mask, u, np.nan)
-    v_masked = np.where(mask, v, np.nan)
-    vel_mag_masked = np.where(mask, vel_mag, np.nan)
-    ax1.quiver(X_masked[::skip, ::skip], Y_masked[::skip, ::skip],
-               u_masked[::skip, ::skip], v_masked[::skip, ::skip],
-               vel_mag_masked[::skip, ::skip], cmap='viridis')
+    skip = 2  # Skip points for clarity
+    ax1.quiver(X[::skip, ::skip], Y[::skip, ::skip],
+               u[::skip, ::skip], v[::skip, ::skip],
+               vel_mag[::skip, ::skip], cmap='viridis')
     ax1.set_title('Velocity Vectors')
     ax1.set_xlabel('x')
     ax1.set_ylabel('y')
@@ -67,6 +55,7 @@ def plot_flow_field(X, Y, u, v, p, psi):
     
     # Plot 4: Vorticity
     ax4 = fig.add_subplot(gs[1, 1])
+    # Calculate vorticity
     dx = X[0, 1] - X[0, 0]
     dy = Y[1, 0] - Y[0, 0]
     vorticity = np.gradient(v, dx, axis=1) - np.gradient(u, dy, axis=0)
