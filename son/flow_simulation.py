@@ -4,16 +4,16 @@ import matplotlib.pyplot as plt
 from visualization import plot_flow_field
 
 class FlowSimulation:
-    def __init__(self, nx=50, ny=50, Lx=1.0, Ly=1.0, Re=100, dt=0.0001, max_iter=1000, tol=1e-5, urf_u=0.7, urf_p=0.3):
+    def __init__(self, nx=200, ny=40, Lx=100.0, Ly=30.0, Re=100, dt=0.0001, max_iter=1000, tol=1e-5, urf_u=0.7, urf_p=0.3):
         """
-        Initialize the flow simulation
+        Initialize the flow simulation for 2D water in nanochannel
         
         Parameters:
         -----------
         nx, ny : int
             Number of grid points in x and y directions
         Lx, Ly : float
-            Domain size in x and y directions
+            Domain size in x and y directions (in Angstroms)
         Re : float
             Reynolds number
         dt : float
@@ -27,10 +27,20 @@ class FlowSimulation:
         urf_p : float
             Under-relaxation factor for pressure
         """
+        # Physical parameters (in Angstroms) from Nature article
+        self.channel_height = 6.0  # d: carbon-carbon interlayer distance (6 or 7Å)
+        self.vdw_offset = 1.67     # δvdW: van der Waals offset
+        self.effective_height = self.channel_height - 2 * self.vdw_offset  # h: effective channel height
+        self.piston_height = 30.0   # H: piston height
+        self.p0 = 1.0              # inlet pressure
+        
+        # Grid parameters
         self.nx = nx
         self.ny = ny
-        self.Lx = Lx
-        self.Ly = Ly
+        self.Lx = Lx  # Channel length
+        self.Ly = self.piston_height  # Set domain height to piston height
+        
+        # Simulation parameters
         self.Re = Re
         self.dt = dt
         self.max_iter = max_iter
@@ -53,26 +63,41 @@ class FlowSimulation:
         self.y = np.linspace(0, Ly, ny)
         self.X, self.Y = np.meshgrid(self.x, self.y)
         
-        # Set boundary conditions for lid-driven cavity
+        # Set initial conditions and boundary conditions
+        self.set_initial_conditions()
         self.set_boundary_conditions()
     
+    def set_initial_conditions(self):
+        """Set initial conditions for 2D water in nanochannel"""
+        # Set initial pressure field
+        self.p.fill(self.p0)  # Initial pressure set to p0
+        
+        # Set initial velocity field to zero
+        self.u.fill(0.0)
+        self.v.fill(0.0)
+    
     def set_boundary_conditions(self):
-        """Set boundary conditions for lid-driven cavity"""
-        # Top wall (moving lid)
-        self.u[-1, :] = 1.0
-        self.v[-1, :] = 0.0
+        """Set boundary conditions for 2D water in nanochannel"""
+        # Inlet (left wall) - constant pressure p0 from piston
+        self.p[:, 0] = self.p0
+        self.v[:, 0] = 0.0  # No vertical flow at inlet
         
-        # Bottom wall
-        self.u[0, :] = 0.0
-        self.v[0, :] = 0.0
+        # Outlet (right wall) - open boundary
+        self.p[:, -1] = 0.0  # Atmospheric pressure at outlet
+        self.u[:, -1] = self.u[:, -2]  # Zero gradient for velocity
+        self.v[:, -1] = self.v[:, -2]
         
-        # Left wall
-        self.u[:, 0] = 0.0
-        self.v[:, 0] = 0.0
+        # Top and bottom walls (no-slip with vdw offset)
+        # Only apply no-slip in the channel region (effective_height)
+        channel_top = (self.Ly + self.effective_height) / 2
+        channel_bottom = (self.Ly - self.effective_height) / 2
         
-        # Right wall
-        self.u[:, -1] = 0.0
-        self.v[:, -1] = 0.0
+        for j in range(self.nx):
+            for i in range(self.ny):
+                y = self.y[i]
+                if y <= channel_bottom or y >= channel_top:
+                    self.u[i, j] = 0.0
+                    self.v[i, j] = 0.0
     
     def solve_momentum_x(self):
         """Solve x-momentum equation"""
@@ -157,11 +182,11 @@ class FlowSimulation:
                 # Under-relaxation
                 p_new[i, j] = self.urf_p * p_star + (1 - self.urf_p) * self.p[i, j]
         
-        # Pressure boundary conditions
-        p_new[:, 0] = p_new[:, 1]  # dp/dx = 0 at x = 0
-        p_new[:, -1] = p_new[:, -2]  # dp/dx = 0 at x = L
-        p_new[0, :] = p_new[1, :]  # dp/dy = 0 at y = 0
-        p_new[-1, :] = p_new[-2, :]  # dp/dy = 0 at y = L
+        # Pressure boundary conditions for microfluidic channel
+        p_new[:, 0] = self.p0  # Constant pressure at inlet
+        p_new[:, -1] = 0.0     # Atmospheric pressure at outlet
+        p_new[0, :] = p_new[1, :]  # dp/dy = 0 at bottom wall
+        p_new[-1, :] = p_new[-2, :]  # dp/dy = 0 at top wall
         
         self.p = p_new
     
@@ -219,7 +244,7 @@ class FlowSimulation:
         plot_flow_field(self.X, self.Y, self.u, self.v, self.p, self.psi)
 
 if __name__ == "__main__":
-    # Create and run simulation
-    sim = FlowSimulation(nx=50, ny=50, Re=100, dt=0.0001, max_iter=2000)
+    # Create and run simulation for 2D water in nanochannel
+    sim = FlowSimulation(nx=200, ny=40, Lx=100.0, Ly=30.0, Re=100, dt=0.0001, max_iter=2000)
     sim.solve()
     sim.plot_results() 
