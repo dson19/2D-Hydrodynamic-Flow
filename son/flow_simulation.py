@@ -27,20 +27,17 @@ class FlowSimulation:
         urf_p : float
             Under-relaxation factor for pressure
         """
-        # Physical parameters (in Angstroms) from Nature article
-        self.channel_height = 7.0  # d: carbon-carbon interlayer distance (6 or 7Å)
+        self.channel_height = 7.0  # d:  interlayer distance (6 or 7Å)
         self.vdw_offset = 1.67     # δvdW: van der Waals offset
         self.effective_height = self.channel_height - 2 * self.vdw_offset  # h: effective channel height
         self.piston_height = 30.0   # H: piston height
         self.p0 = 1.0              # inlet pressure
         
-        # Grid parameters
         self.nx = nx
         self.ny = ny
         self.Lx = Lx  # Channel length
         self.Ly = self.piston_height  # Set domain height to piston height
         
-        # Simulation parameters
         self.Re = Re
         self.dt = dt
         self.max_iter = max_iter
@@ -77,18 +74,17 @@ class FlowSimulation:
         self.v.fill(0.0)
     
     def set_boundary_conditions(self):
-        """Set boundary conditions for 2D water in nanochannel"""
-        # Inlet (left wall) - constant pressure p0 from piston
+        # Đầu vào - constant pressure p0 from piston
         self.p[:, 0] = self.p0
         self.v[:, 0] = 0.0  # No vertical flow at inlet
         
-        # Outlet (right wall) - open boundary
+        # Đầu ra  (right wall) - open boundary
         self.p[:, -1] = 0.0  # Atmospheric pressure at outlet
         self.u[:, -1] = self.u[:, -2]  # Zero gradient for velocity
         self.v[:, -1] = self.v[:, -2]
         
-        # Top and bottom walls (no-slip with vdw offset)
-        # Only apply no-slip in the channel region (effective_height)
+        # Chặn dưới và trên (no-slip with vdw offset)
+        # Apply trong channel  (effective_height)
         channel_top = (self.Ly + self.effective_height) / 2
         channel_bottom = (self.Ly - self.effective_height) / 2
         
@@ -100,7 +96,6 @@ class FlowSimulation:
                     self.v[i, j] = 0.0
     
     def solve_momentum_x(self):
-        """Solve x-momentum equation"""
         u_new = self.u.copy()
         
         for i in range(1, self.ny-1):
@@ -130,7 +125,6 @@ class FlowSimulation:
         self.set_boundary_conditions()
     
     def solve_momentum_y(self):
-        """Solve y-momentum equation"""
         v_new = self.v.copy()
         
         for i in range(1, self.ny-1):
@@ -160,12 +154,11 @@ class FlowSimulation:
         self.set_boundary_conditions()
     
     def solve_pressure_poisson(self):
-        """Solve pressure Poisson equation"""
         p_new = self.p.copy()
         
         for i in range(1, self.ny-1):
             for j in range(1, self.nx-1):
-                # Source term
+                # Source term to modify to remain incompressibility 
                 b = (1/self.dt * (
                     (self.u[i, j+1] - self.u[i, j-1])/(2*self.dx) +
                     (self.v[i+1, j] - self.v[i-1, j])/(2*self.dy)
@@ -182,16 +175,14 @@ class FlowSimulation:
                 # Under-relaxation
                 p_new[i, j] = self.urf_p * p_star + (1 - self.urf_p) * self.p[i, j]
         
-        # Pressure boundary conditions for microfluidic channel
-        p_new[:, 0] = self.p0  # Constant pressure at inlet
-        p_new[:, -1] = 0.0     # Atmospheric pressure at outlet
-        p_new[0, :] = p_new[1, :]  # dp/dy = 0 at bottom wall
-        p_new[-1, :] = p_new[-2, :]  # dp/dy = 0 at top wall
+        p_new[:, 0] = self.p0  
+        p_new[:, -1] = 0.0     
+        p_new[0, :] = p_new[1, :]  
+        p_new[-1, :] = p_new[-2, :]  
         
         self.p = p_new
     
     def update_velocity(self):
-        """Update velocity field using pressure correction"""
         for i in range(1, self.ny-1):
             for j in range(1, self.nx-1):
                 self.u[i, j] -= self.dt * (self.p[i, j+1] - self.p[i, j-1]) / (2*self.dx)
@@ -199,7 +190,6 @@ class FlowSimulation:
         self.set_boundary_conditions()
     
     def calculate_streamfunction(self):
-        """Calculate stream function"""
         self.psi = np.zeros((self.ny, self.nx))
         for i in range(1, self.ny-1):
             for j in range(1, self.nx-1):
@@ -212,7 +202,6 @@ class FlowSimulation:
                 )
     
     def solve(self):
-        """Run the simulation for max_iter steps"""
         for step in range(self.max_iter):
             u_prev = self.u.copy()
             v_prev = self.v.copy()
