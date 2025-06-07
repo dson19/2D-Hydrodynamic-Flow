@@ -60,6 +60,9 @@ class FlowSimulation:
         self.y = np.linspace(0, Ly, ny)
         self.X, self.Y = np.meshgrid(self.x, self.y)
         
+        # get top and bottom of channel 
+        self.channel_top = (self.Ly + self.effective_height) / 2
+        self.channel_bottom = (self.Ly - self.effective_height) / 2
         # Set initial conditions and boundary conditions
         self.set_initial_conditions()
         self.set_boundary_conditions()
@@ -85,13 +88,12 @@ class FlowSimulation:
         
         # Chặn dưới và trên (no-slip with vdw offset)
         # Apply trong channel  (effective_height)
-        channel_top = (self.Ly + self.effective_height) / 2
-        channel_bottom = (self.Ly - self.effective_height) / 2
+        
         
         for j in range(self.nx):
             for i in range(self.ny):
                 y = self.y[i]
-                if y <= channel_bottom or y >= channel_top:
+                if y <= self.channel_bottom or y >= self.channel_top:
                     self.u[i, j] = 0.0
                     self.v[i, j] = 0.0
     
@@ -209,9 +211,8 @@ class FlowSimulation:
             self.solve_momentum_x()
             self.solve_momentum_y()
             
-            # Solve pressure Poisson equation
-            for _ in range(30):  # Pressure iterations
-                self.solve_pressure_poisson()
+            # Solve pressure Poisson equation only once per time step
+            self.solve_pressure_poisson()
             
             # Update velocity field
             self.update_velocity()
@@ -230,7 +231,8 @@ class FlowSimulation:
     
     def plot_results(self):
         """Plot the simulation results"""
-        plot_flow_field(self.X, self.Y, self.u, self.v, self.p, self.psi)
+        plot_flow_field(self.X, self.Y, self.u, self.v, self.p, self.psi, channel_bottom= 
+        self.channel_bottom, channel_top=self.channel_top)
 
 if __name__ == "__main__":
     # Create and run simulation for 2D water in nanochannel

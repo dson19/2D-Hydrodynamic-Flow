@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-def plot_flow_field(X, Y, u, v, p, psi):
+def plot_flow_field(X, Y, u, v, p, psi, channel_bottom=None, channel_top=None):
     """
     Plot the flow field visualization including velocity vectors,
     pressure contours, and streamlines.
@@ -17,7 +17,15 @@ def plot_flow_field(X, Y, u, v, p, psi):
         Pressure field
     psi : 2D array
         Stream function
+    channel_bottom, channel_top : float, optional
+        Limits for the channel region in y-direction
     """
+    # Set channel limits if not provided
+    if channel_bottom is None:
+        channel_bottom = Y.min()
+    if channel_top is None:
+        channel_top = Y.max()
+
     # Create figure with subplots
     fig = plt.figure(figsize=(15, 10))
     gs = GridSpec(2, 2)
@@ -34,6 +42,7 @@ def plot_flow_field(X, Y, u, v, p, psi):
     ax1.set_title('Velocity Vectors')
     ax1.set_xlabel('x')
     ax1.set_ylabel('y')
+    ax1.set_ylim(channel_bottom, channel_top)
     plt.colorbar(ax1.collections[0], ax=ax1, label='Velocity magnitude')
     
     # Plot 2: Pressure contours
@@ -51,6 +60,8 @@ def plot_flow_field(X, Y, u, v, p, psi):
     ax3.set_title('Streamlines')
     ax3.set_xlabel('x')
     ax3.set_ylabel('y')
+    # Focus on the channel region for streamlines
+    ax3.set_ylim(channel_bottom, channel_top)
     plt.colorbar(stream.lines, ax=ax3, label='Velocity magnitude')
     
     # Plot 4: Vorticity
@@ -63,6 +74,7 @@ def plot_flow_field(X, Y, u, v, p, psi):
     ax4.set_title('Vorticity')
     ax4.set_xlabel('x')
     ax4.set_ylabel('y')
+    ax4.set_ylim(channel_bottom, channel_top)
     plt.colorbar(vort_contour, ax=ax4, label='Vorticity')
     
     plt.tight_layout()
